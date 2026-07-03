@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.db
+uploads/
+.env
+deploy/managex.env
+firebase-service-account.json
+**/firebase-service-account.json
+venv/
+.venv/
+backend/venv/
+backend/data/
+
+# Node
+node_modules/
+dist/
+dev-dist/
+release/
+backend/dist/
+backend/build/
+build/icons/
+
+# Deploy artifacts
+*.tar.gz
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store

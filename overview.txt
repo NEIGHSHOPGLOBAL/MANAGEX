@@ -1,0 +1,665 @@
+# OVERVIEW.txt
+
+# ManageX
+
+### Simple Team Planner & Task Management System
+
+---
+
+# Project Vision
+
+ManageX is a lightweight, modern Team Planner and Task Management platform built for organizations that want an easy-to-use system instead of a complex enterprise ERP.
+
+The primary goal is quick task assignment, project management, verification workflow, and personal planning while maintaining a clean UI, fast performance, and excellent mobile experience.
+
+The application will be built as a **Progressive Web App (PWA)** using **React.js** for the frontend and **Python Flask** for the backend.
+
+---
+
+# Tech Stack
+
+Frontend
+
+* React.js
+* Tailwind CSS
+* React Router
+* PWA (Installable)
+* Responsive Design
+
+Backend
+
+* Python Flask
+* JWT Authentication
+* PostgreSQL Database
+* REST API Architecture
+
+Storage
+
+* Local Storage for uploaded files (future-ready for cloud migration)
+
+Allowed Uploads
+
+* Images
+* PDF Files
+
+Maximum Upload Size
+
+* 5 MB per file
+
+---
+
+# User Hierarchy
+
+Super Admin
+
+↓
+
+Admin
+
+↓
+
+COO
+
+↓
+
+Branch Manager
+
+↓
+
+Employee
+
+Role hierarchy determines visibility, permissions and approval authority.
+
+---
+
+# User Authentication
+
+Login using
+
+* Employee ID
+* Password
+
+Password Management
+
+* Every user can change their own password.
+* Super Admin
+* Admin
+* COO
+* Branch Manager
+
+can create employees and reset passwords of employees under their control.
+
+---
+
+# Task Categories
+
+## 1. Personal Task
+
+Visible only to the creator.
+
+Purpose
+
+Personal reminders and planning.
+
+Features
+
+* Title
+* Description
+* Due Date & Time
+* Priority
+* Status
+* Checklist (optional)
+* Personal Notes
+
+No approval required.
+
+No project association.
+
+---
+
+## 2. Normal Task
+
+Can be assigned to anyone.
+
+Purpose
+
+Quick work assignments.
+
+Flow
+
+Assigned
+
+↓
+
+In Progress
+
+↓
+
+Done
+
+No manager verification required.
+
+Once employee marks Done
+
+* Task becomes read-only.
+* Only Super Admin can reopen or modify the completion state.
+
+---
+
+## 3. Project Task
+
+Belongs to a project.
+
+Flow
+
+Assigned
+
+↓
+
+In Progress
+
+↓
+
+Done by Employee
+
+↓
+
+Pending Verification
+
+↓
+
+Verified by Management
+
+↓
+
+Completed
+
+If rejected
+
+↓
+
+Returns back to employee.
+
+Only authorized management can verify completion.
+
+---
+
+# Task Information
+
+Each task should support
+
+* Title
+* Description
+* Task Type
+* Priority
+* Due Date
+* Due Time
+* Assigned By
+* Assigned To
+* Created Timestamp
+* Completion Timestamp
+* Current Status
+* Project (optional)
+* Checklist
+* Comments
+* Image Uploads
+* PDF Uploads
+* Latitude
+* Longitude
+* Office Location Status
+* Activity Logs
+
+---
+
+# Task Completion Tracking
+
+When a task is marked completed
+
+Automatically record
+
+* Completion Date
+* Completion Time
+* Latitude
+* Longitude
+* Device Information (optional)
+* Whether task was completed inside office area or outside office area
+
+Management Filters
+
+* Completed Inside Office
+* Completed Outside Office
+
+This allows quick auditing.
+
+---
+
+# Late Completion Logic
+
+Every task has
+
+* Due Date
+* Due Time
+
+If completed after deadline
+
+Show
+
+Late Completion
+
+Important Rule
+
+Late highlighting is applicable only for
+
+* COO
+* Branch Manager
+* Employee
+
+Exception
+
+If Super Admin assigns any task to an Admin, late completion should also be tracked.
+
+Tasks assigned directly to Super Admin are never considered late.
+
+---
+
+# Task Verification Rules
+
+Personal Task
+
+No verification.
+
+Normal Task
+
+Employee marks Done.
+
+Task completes immediately.
+
+Project Task
+
+Employee marks Done.
+
+Task enters Pending Verification.
+
+Management verifies.
+
+Task becomes Completed.
+
+Only Super Admin can reopen completed tasks.
+
+Admins cannot reopen completed tasks.
+
+---
+
+# Task Comments
+
+Every task contains a discussion timeline.
+
+Example
+
+* Employee updates progress.
+* Manager requests changes.
+* Employee uploads proof.
+* Manager verifies.
+
+Supports
+
+* Text
+* Images
+* PDF Files
+
+---
+
+# Projects
+
+Management users can create projects.
+
+Project Fields
+
+* Name
+* Description
+* Status
+* Priority
+* Start Date
+* Deadline
+* Members
+* Project Manager
+* Progress
+* Created Date
+
+Project Status
+
+* Planning
+* Active
+* Completed
+* Archived
+
+Every Project contains
+
+* Overview
+* Members
+* Tasks
+* Progress
+* Activity Timeline
+
+---
+
+# Dashboard
+
+Dashboard should provide an instant overview.
+
+Cards
+
+* Total Tasks
+* Assigned Tasks
+* My Tasks
+* Due Today
+* Overdue
+* Pending Verification
+* Completed Today
+* Personal Tasks
+* Active Projects
+
+Charts
+
+* Weekly Productivity
+* Task Status Distribution
+* Completion Rate
+* Monthly Task Summary
+
+Quick Actions
+
+* Add Personal Task
+* Assign Task
+* Create Project
+* View Calendar
+
+Recent Activity
+
+Recent assigned tasks
+
+Recent completed tasks
+
+Recent comments
+
+---
+
+# Calendar Planner
+
+Monthly calendar view.
+
+Display
+
+* Task Deadlines
+* Personal Tasks
+* Project Deadlines
+* Completed Tasks
+* Holidays (future support)
+
+Clicking a day opens all related tasks.
+
+---
+
+# Notifications
+
+PWA Notifications
+
+* New Task Assigned
+* Due Today
+* Due Tomorrow
+* Overdue Task
+* Task Verified
+* Task Rejected
+* Project Assigned
+* Comment Added
+* Mentioned in Discussion
+
+---
+
+# Employee Management
+
+Authorized Roles
+
+* Super Admin
+* Admin
+* COO
+* Branch Manager
+
+Can
+
+* Create Employee
+* Edit Employee
+* Reset Password
+* Activate Account
+* Deactivate Account
+
+Employee Profile
+
+* Name
+* Employee ID
+* Role
+* Contact
+* Joining Date
+* Profile Photo
+* Password Change
+
+---
+
+# Permissions
+
+## Super Admin
+
+Complete system control.
+
+Can
+
+* Everything
+* Reopen completed tasks
+* Change completed task state
+* Delete uploaded files
+* Clear storage manually
+* View every task
+* View every project
+* Manage every user
+* System settings
+
+---
+
+## Admin
+
+Can
+
+* Manage users
+* Create projects
+* Assign tasks
+* Verify project tasks
+* View reports
+
+Cannot
+
+* Reopen completed tasks
+* Change completed task status
+
+---
+
+## COO
+
+Can
+
+* Create projects
+* Assign tasks
+* Verify project tasks
+* View reports
+* Manage employees
+
+Cannot
+
+* Reopen completed tasks
+
+---
+
+## Branch Manager
+
+Can
+
+* Assign tasks
+* Verify assigned project tasks
+* Manage employees
+
+Cannot
+
+* Reopen completed tasks
+
+---
+
+## Employee
+
+Can
+
+* View own tasks
+* Complete tasks
+* Add comments
+* Upload proof
+* Manage personal tasks
+* Change password
+
+Cannot
+
+* View others' tasks
+* Verify tasks
+* Manage users
+* Reopen tasks
+
+---
+
+# Visibility Rules
+
+Employee
+
+Can only see
+
+* Personal Tasks
+* Assigned Tasks
+* Own Projects
+
+Cannot see
+
+* Other employees' work
+
+Management
+
+Can see
+
+* All assigned tasks
+* Task owners
+* Status
+* Progress
+* Pending Verification
+* Late tasks
+* Task history
+
+---
+
+# Activity Logs
+
+Every important action is logged.
+
+Examples
+
+* Task Created
+* Task Assigned
+* Task Updated
+* Comment Added
+* Attachment Uploaded
+* Task Completed
+* Verification Approved
+* Verification Rejected
+* Task Reopened
+* Password Reset
+* Project Created
+* Project Updated
+
+Every log records
+
+* User
+* Date
+* Time
+* Action
+* IP (optional)
+* Latitude & Longitude (where applicable)
+
+---
+
+# Storage Management
+
+Only Super Admin can
+
+* View storage usage
+* Delete uploaded images
+* Delete uploaded PDFs
+* Remove unused files
+* Clear storage manually
+
+---
+
+# UI / UX Guidelines
+
+Design Philosophy
+
+Modern
+
+Minimal
+
+Professional
+
+Fast
+
+Responsive
+
+Requirements
+
+* Compact UI
+* Smaller component sizing for higher information density
+* Rounded cards
+* Soft shadows
+* Clean typography
+* Consistent spacing
+* Smooth animations
+* Mobile-first responsive layout
+
+Navigation
+
+Left sidebar
+
+* Collapsed by default
+* Expands on hover (desktop)
+* Drawer navigation on mobile
+
+Header
+
+* Search
+* Notifications
+* Profile
+* Quick Actions
+
+Floating Quick Action Button
+
+* Personal Task
+* Assign Task
+* Create Project
+
+---
+
+# PWA Requirements
+
+* Installable on Desktop & Mobile
+* Offline shell support
+* Fast loading
+* Push notifications
+* Responsive on all screen sizes
+* App-like experience
+
+---
+
+# Future Scope
+
+The architecture should remain modular to support future additions without major refactoring, including attendance management, leave management, document management, analytics, multi-branch organizations, client management, recurring tasks, and cloud storage integration.

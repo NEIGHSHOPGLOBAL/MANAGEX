@@ -1,0 +1,487 @@
+# new_addon.txt
+
+# ManageX - Productivity & UX Additions
+
+## Purpose
+
+This document describes additional productivity features that enhance the user experience without increasing system complexity. These features are optional UI improvements designed to reduce clicks, improve accessibility, and make daily task management significantly faster.
+
+All features should follow a **user preference model**, meaning users can enable or disable them individually from their profile/settings. Nothing in this document should be forced by default except where explicitly mentioned.
+
+---
+
+# 1. Progressive Web App (PWA)
+
+ManageX should function as a modern installable web application.
+
+## Requirements
+
+* Installable on Desktop
+* Installable on Android
+* Installable on iOS (supported browser limitations apply)
+* Offline shell support
+* Fast loading using service workers
+* Responsive on all screen sizes
+* App-like experience
+* Automatic update detection with a refresh prompt
+* Application icon
+* Splash screen
+* Theme color support
+
+Future support should allow push notifications without changing the overall architecture.
+
+---
+
+# 2. User Productivity Preferences
+
+Every user should have a **Productivity Settings** section.
+
+Example options:
+
+* Enable Floating Quick Actions
+* Enable Sticky Today Panel
+* Enable Quick Notes Widget
+* Enable Keyboard Shortcuts
+* Enable Desktop Notifications
+* Compact UI Mode
+* Enable Sound Notifications
+* Enable Dashboard Widgets
+* Enable Task Timer (future)
+
+Each option should be stored per user so every employee can customize their own workspace.
+
+Nothing should be mandatory.
+
+---
+
+# 3. Floating Quick Action Button
+
+A floating action button should remain visible throughout the application.
+
+Desktop
+
+Bottom Right
+
+Mobile
+
+Bottom Right above navigation bar.
+
+Clicking it opens quick actions.
+
+Example
+
+* Personal Task
+
+* Assign Task
+
+* Quick Note
+
+* New Project (Management only)
+
+Implementation
+
+* Fixed positioned button
+* Smooth expand animation
+* Close automatically after selecting an option
+* Hide project option for employees
+* Can be disabled from Productivity Settings
+
+Goal
+
+No page navigation should be required for common actions.
+
+---
+
+# 4. Sticky "Today's Work" Panel
+
+A collapsible panel displaying today's work.
+
+Suggested information
+
+* Due Today
+* Overdue
+* Pending Verification
+* Personal Tasks
+* Recently Assigned
+
+Implementation
+
+Desktop
+
+Small floating panel on the right.
+
+Mobile
+
+Bottom sheet or slide-up panel.
+
+Features
+
+* Collapse
+* Expand
+* Remember last state
+* Scroll independently
+
+Can be disabled by the user.
+
+---
+
+# 5. Quick Note Widget
+
+Purpose
+
+Capture ideas instantly without creating a task.
+
+Features
+
+* Auto Save
+* Rich Text Not Required
+* Timestamp
+* Search Notes
+* Edit
+* Delete
+
+These notes are private.
+
+Implementation
+
+Small floating note panel.
+
+Can be hidden from settings.
+
+---
+
+# 6. Global Command Palette
+
+Keyboard Shortcut
+
+Ctrl + K
+
+Purpose
+
+Search and execute actions from anywhere.
+
+Examples
+
+Assign Task
+
+Create Personal Task
+
+Open Dashboard
+
+Search Employee
+
+Open Calendar
+
+Open Project
+
+Search Task
+
+Implementation
+
+Popup overlay
+
+Keyboard navigation
+
+Fast search
+
+Role-aware results
+
+Employees should never see management-only actions.
+
+---
+
+# 7. Dashboard Quick Filters
+
+Task lists should include sticky filters.
+
+Examples
+
+All
+
+Mine
+
+Today
+
+Overdue
+
+Completed
+
+Pending Verification
+
+Late
+
+Personal
+
+Project
+
+Implementation
+
+Remain visible while scrolling.
+
+One-click filtering.
+
+Remember last selected filter.
+
+---
+
+# 8. Notification Center
+
+Notification panel should support direct actions.
+
+Examples
+
+Task Assigned
+
+Task Completed
+
+Verification Required
+
+Deadline Today
+
+Comment Added
+
+Instead of only displaying information, notifications should provide contextual action buttons where appropriate.
+
+Examples
+
+Verify
+
+Reject
+
+Open Task
+
+Mark Read
+
+This minimizes navigation.
+
+---
+
+# 9. Continue Working Widget
+
+Dashboard should display recently active work.
+
+Examples
+
+Continue Working
+
+API Integration
+
+Resume
+
+Project Dashboard
+
+Resume
+
+Personal Task
+
+Resume
+
+Implementation
+
+Automatically remember recently opened tasks and projects.
+
+Limit to five recent items.
+
+---
+
+# 10. Mobile Bottom Navigation
+
+Instead of relying only on a sidebar, mobile devices should display a bottom navigation bar.
+
+Suggested items
+
+Home
+
+Tasks
+
+*
+
+Calendar
+
+Profile
+
+The center "+" opens the Floating Quick Actions menu.
+
+---
+
+# 11. Compact UI Mode
+
+Provide an optional compact interface.
+
+Features
+
+* Reduced card height
+* Smaller padding
+* Smaller tables
+* Denser layouts
+* More information on screen
+
+This setting is user-specific.
+
+---
+
+# 12. Dashboard Widgets
+
+Dashboard should be modular.
+
+Suggested widgets
+
+My Tasks
+
+Today's Tasks
+
+Projects
+
+Pending Verification
+
+Recent Activity
+
+Calendar
+
+Weekly Progress
+
+Users should be able to
+
+* Hide widgets
+* Reorder widgets
+* Restore defaults
+
+Layout preference should be saved per user.
+
+---
+
+# 13. Overdue Indicators
+
+Tasks should visually communicate urgency.
+
+Examples
+
+On Time
+
+Due Today
+
+Due in 3 Hours
+
+1 Day Late
+
+3 Days Late
+
+Pending Verification
+
+Use consistent color coding and icons throughout the application.
+
+---
+
+# 14. Keyboard Shortcuts
+
+Provide optional shortcuts for power users.
+
+Suggested shortcuts
+
+Ctrl + K → Command Palette
+
+N → New Personal Task
+
+A → Assign Task
+
+P → Open Projects
+
+T → My Tasks
+
+Esc → Close Active Dialog
+
+Keyboard shortcuts should be disabled automatically while typing in text fields.
+
+---
+
+# 15. Responsive Design Guidelines
+
+Desktop
+
+Hover-expand sidebar
+
+Tablet
+
+Collapsible sidebar
+
+Mobile
+
+Bottom navigation
+
+Floating action button
+
+Responsive cards
+
+Touch-friendly controls
+
+The interface should remain usable on screens from approximately 320px to 4K without requiring horizontal scrolling.
+
+---
+
+# 16. Performance Goals
+
+* Lazy-load pages
+* Lazy-load large tables
+* Optimize images
+* Cache static assets
+* Minimize unnecessary API requests
+* Use pagination or infinite scrolling where appropriate
+* Maintain smooth animations (target 60 FPS where practical)
+
+---
+
+# 17. Developer Implementation Order
+
+To simplify development, implement features in the following sequence:
+
+Phase 1
+
+* Configure PWA
+* Install service worker
+* Add manifest
+* Enable install prompt
+* Verify responsive layout
+
+Phase 2
+
+* Floating Quick Action Button
+* Personal Task dialog
+* Assign Task dialog
+* Project creation dialog
+
+Phase 3
+
+* Dashboard widgets
+* Quick filters
+* Continue Working section
+
+Phase 4
+
+* Notification center
+* Sticky Today panel
+* Quick Notes widget
+
+Phase 5
+
+* Command Palette
+* Keyboard shortcuts
+* User productivity settings
+
+Phase 6
+
+* Final optimization
+* Performance improvements
+* Accessibility checks
+* Cross-browser testing
+* PWA installation testing
+
+---
+
+# Development Principles
+
+* Every frequently used action should be reachable within one or two clicks.
+* Productivity features must remain optional and user-configurable.
+* Prioritize performance over visual effects.
+* Maintain consistent behavior across desktop, tablet, and mobile.
+* Build reusable UI components to simplify future feature additions.
+* Ensure every new component is responsive, accessible, and compatible with the installable PWA experience.

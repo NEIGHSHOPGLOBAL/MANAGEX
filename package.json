@@ -1,0 +1,62 @@
+{
+  "name": "managex",
+  "productName": "ManageX",
+  "version": "1.0.0",
+  "description": "Team Planner & Task Management — desktop app",
+  "author": "ManageX",
+  "license": "UNLICENSED",
+  "main": "desktop/main.js",
+  "scripts": {
+    "build:icons": "python3 scripts/generate-icons.py",
+    "build:frontend": "cd frontend && npm run build",
+    "build:frontend:desktop": "cd frontend && VITE_ELECTRON=1 npm run build",
+    "build:backend": "bash scripts/build-backend.sh",
+    "desktop:dev": "npm run build:icons && electron .",
+    "pack": "npm run build:icons && electron-builder --dir",
+    "dist:mac": "npm run build:icons && electron-builder --mac dmg",
+    "dist:win": "npm run build:icons && electron-builder --win nsis",
+    "dist:linux": "npm run build:icons && electron-builder --linux AppImage"
+  },
+  "build": {
+    "appId": "com.managex.app",
+    "productName": "ManageX",
+    "copyright": "Copyright © 2026 ManageX",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "desktop/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": ["dmg"],
+      "icon": "build/icon.icns",
+      "darkModeSupport": true
+    },
+    "dmg": {
+      "title": "ManageX ${version}"
+    },
+    "win": {
+      "target": ["nsis"],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ManageX"
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "category": "Office",
+      "icon": "build/icons"
+    }
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^25.1.8"
+  }
+}
