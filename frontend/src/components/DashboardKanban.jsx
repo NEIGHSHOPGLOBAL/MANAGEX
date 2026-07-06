@@ -7,6 +7,7 @@ import {
 import { api } from '../api/client';
 import { useAuth, isManagement } from '../context/AuthContext';
 import { PriorityBadge, TypeBadge } from './Badges';
+import { formatAssigneeNames, isTaskAssignee } from '../utils/taskAssignees';
 
 const COLUMNS = [
   { id: 'todo', label: 'To Do', statuses: ['assigned', 'todo', 'rejected'], accent: 'border-l-slate-400' },
@@ -36,7 +37,7 @@ function getLocation() {
 
 function KanbanCard({ task, onAction, busy, user, today, onDragStart, dragging }) {
   const isOverdue = task.due_date && task.due_date < today && !['done', 'completed'].includes(task.status);
-  const canAct = !task.is_readonly;
+  const canAct = !task.is_readonly && (isTaskAssignee(task, user?.id) || user?.role === 'super_admin');
   const canDrag = canAct || user?.role === 'super_admin';
 
   const actions = [];
@@ -85,7 +86,7 @@ function KanbanCard({ task, onAction, busy, user, today, onDragStart, dragging }
       )}
 
       <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-slate-400 mb-2.5">
-        {task.assigned_to && <span className="truncate max-w-[120px]">{task.assigned_to.name}</span>}
+        {formatAssigneeNames(task) && <span className="truncate max-w-[160px]">{formatAssigneeNames(task)}</span>}
         {task.due_date && (
           <span className="flex items-center gap-0.5 shrink-0">
             <Calendar size={10} />
@@ -141,7 +142,7 @@ export default function DashboardKanban({ tasks, onRefresh }) {
   const filteredTasks = useMemo(() => {
     return localTasks.filter((t) => {
       switch (filter) {
-        case 'mine': return t.assigned_to_id === user?.id;
+        case 'mine': return isTaskAssignee(t, user?.id);
         case 'today': return t.due_date === today && !['done', 'completed'].includes(t.status);
         case 'overdue': return isTaskOverdue(t, today);
         case 'personal': return t.task_type === 'personal';

@@ -7,7 +7,7 @@ from flask import current_app, request
 from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
 
 from extensions import db
-from models import ActivityLog, Notification, ROLES, ROLE_HIERARCHY, User
+from models import ActivityLog, Notification, ROLES, ROLE_HIERARCHY, TaskAssignee, User
 
 
 MANAGEMENT_ROLES = {"super_admin", "admin", "coo", "branch_manager"}
@@ -46,12 +46,46 @@ def can_manage_user(actor, target):
     return actor.role in EMPLOYEE_MANAGE_ROLES
 
 
+def user_is_task_assignee(user, task):
+    if task.assigned_to_id == user.id:
+        return True
+    return any(a.user_id == user.id for a in task.assignees)
+
+
+def resolve_assignee_ids(data):
+    ids = data.get("assigned_to_ids") or []
+    if not ids and data.get("assigned_to_id"):
+        ids = [data["assigned_to_id"]]
+    return list(dict.fromkeys(int(i) for i in ids if i))
+
+
+def sync_task_assignees(task, user_ids):
+    user_ids = list(dict.fromkeys(int(u) for u in user_ids if u))
+    if not user_ids:
+        return []
+    existing = {a.user_id for a in task.assignees}
+    task.assigned_to_id = user_ids[0]
+    for assignee in list(task.assignees):
+        if assignee.user_id not in user_ids:
+            db.session.delete(assignee)
+    for uid in user_ids:
+        if uid not in existing:
+            db.session.add(TaskAssignee(task_id=task.id, user_id=uid))
+    return user_ids
+
+
+def notify_task_assignees(task, actor_id, title, message, notification_type):
+    for uid in task.assignee_ids():
+        if uid != actor_id:
+            notify_user(uid, title, message, notification_type, "task", task.id)
+
+
 def can_view_task(user, task):
     if user.role == "super_admin":
         return True
     if task.task_type == "personal":
         return task.assigned_to_id == user.id
-    if task.assigned_to_id == user.id or task.assigned_by_id == user.id:
+    if user_is_task_assignee(user, task) or task.assigned_by_id == user.id:
         return True
     if user.role in MANAGEMENT_ROLES:
         return True
@@ -69,7 +103,7 @@ def can_edit_task(user, task):
         return task.assigned_to_id == user.id
     if user.role in MANAGEMENT_ROLES:
         return True
-    return task.assigned_to_id == user.id and task.status not in ("done", "completed", "pending_verification")
+    return user_is_task_assignee(user, task) and task.status not in ("done", "completed", "pending_verification")
 
 
 def can_verify_task(user, task):
@@ -161,6 +195,4 @@ def notify_user(user_id, title, message, notification_type, entity_type=None, en
 
 
 def get_assignable_users(actor):
-    if actor.role == "employee":
-        return []
     return User.query.filter(User.is_active.is_(True)).order_by(User.name).all()

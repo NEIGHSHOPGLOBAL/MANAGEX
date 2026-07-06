@@ -35,10 +35,8 @@ export function useKeyboardShortcuts({ onQuickAction }) {
           onQuickAction?.('personal');
           break;
         case 'a':
-          if (user?.role !== 'employee') {
-            e.preventDefault();
-            onQuickAction?.('assign');
-          }
+          e.preventDefault();
+          onQuickAction?.('assign');
           break;
         case 'p':
           e.preventDefault();

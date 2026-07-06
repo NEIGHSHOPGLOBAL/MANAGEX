@@ -184,9 +184,20 @@ class Task(db.Model):
     assigned_by = db.relationship("User", foreign_keys=[assigned_by_id])
     assigned_to = db.relationship("User", foreign_keys=[assigned_to_id])
     project = db.relationship("Project", back_populates="tasks")
+    assignees = db.relationship("TaskAssignee", back_populates="task", cascade="all, delete-orphan")
     checklist_items = db.relationship("TaskChecklist", back_populates="task", cascade="all, delete-orphan")
     comments = db.relationship("TaskComment", back_populates="task", cascade="all, delete-orphan")
     attachments = db.relationship("TaskAttachment", back_populates="task", cascade="all, delete-orphan")
+
+    def assignee_users(self):
+        if self.assignees:
+            return [a.user for a in self.assignees if a.user]
+        return [self.assigned_to] if self.assigned_to else []
+
+    def assignee_ids(self):
+        if self.assignees:
+            return [a.user_id for a in self.assignees]
+        return [self.assigned_to_id] if self.assigned_to_id else []
 
     def is_late(self):
         if not self.completed_at or not self.due_date:
@@ -218,6 +229,8 @@ class Task(db.Model):
             "assigned_to_id": self.assigned_to_id,
             "assigned_by": self.assigned_by.to_dict(include_contact=False) if self.assigned_by else None,
             "assigned_to": self.assigned_to.to_dict(include_contact=False) if self.assigned_to else None,
+            "assignees": [u.to_dict(include_contact=False) for u in self.assignee_users()],
+            "assigned_to_ids": self.assignee_ids(),
             "project_id": self.project_id,
             "project": self.project.to_dict() if self.project else None,
             "is_readonly": self.is_readonly,
@@ -235,6 +248,19 @@ class Task(db.Model):
             data["comments"] = [c.to_dict() for c in self.comments]
             data["attachments"] = [a.to_dict() for a in self.attachments]
         return data
+
+
+class TaskAssignee(db.Model):
+    __tablename__ = "task_assignees"
+    __table_args__ = (db.UniqueConstraint("task_id", "user_id", name="uq_task_assignee"),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    task_id = db.Column(db.Integer, db.ForeignKey("tasks.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+    task = db.relationship("Task", back_populates="assignees")
+    user = db.relationship("User")
 
 
 class TaskChecklist(db.Model):

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { StatusBadge, PriorityBadge } from './Badges';
+import { formatAssigneeNames } from '../utils/taskAssignees';
 
 const BRAND_COLORS = ['#1a365d', '#2563eb', '#06b6d4', '#22c55e', '#f59e0b', '#ef4444'];
 
@@ -100,7 +101,7 @@ export default function DashboardStats({ stats, tasks, today }) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{task.title}</p>
-                      <p className="text-xs text-slate-400">{task.assigned_to?.name || 'Unassigned'}</p>
+                      <p className="text-xs text-slate-400">{formatAssigneeNames(task) || 'Unassigned'}</p>
                     </div>
                     <PriorityBadge priority={task.priority} />
                     <StatusBadge status={task.status} />
@@ -133,7 +134,7 @@ export default function DashboardStats({ stats, tasks, today }) {
                         <td className="p-4">
                           <Link to={`/tasks/${task.id}`} className="font-medium text-slate-800 dark:text-slate-100 hover:text-[#2563eb]">{task.title}</Link>
                         </td>
-                        <td className="p-4 text-slate-500 dark:text-slate-400 hidden sm:table-cell">{task.assigned_to?.name || '—'}</td>
+                        <td className="p-4 text-slate-500 dark:text-slate-400 hidden sm:table-cell">{formatAssigneeNames(task) || '—'}</td>
                         <td className="p-4 text-slate-500 dark:text-slate-400 hidden md:table-cell">{task.due_date || '—'}</td>
                         <td className="p-4"><StatusBadge status={task.status} /></td>
                       </tr>

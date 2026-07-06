@@ -3,12 +3,14 @@ import { isTaskOverdue, localTodayISO } from '../utils/date';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Plus, MapPin } from 'lucide-react';
 import { api } from '../api/client';
-import { useAuth, isManagement } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { useProductivity } from '../context/ProductivityContext';
 import { StatusBadge, PriorityBadge, TypeBadge } from '../components/Badges';
 import OverdueIndicator from '../components/OverdueIndicator';
 import Modal from '../components/Modal';
+import UserMultiSelect from '../components/UserMultiSelect';
 import { SkeletonList } from '../components/Skeleton';
+import { formatAssigneeNames, isTaskAssignee } from '../utils/taskAssignees';
 
 const QUICK_FILTERS = [
   { id: 'all', label: 'All' },
@@ -34,7 +36,7 @@ export default function Tasks() {
   const [projects, setProjects] = useState([]);
   const [form, setForm] = useState({
     title: '', description: '', task_type: 'normal', priority: 'medium',
-    due_date: '', due_time: '', assigned_to_id: '', project_id: '',
+    due_date: '', due_time: '', assigned_to_ids: [], project_id: '',
   });
 
   const load = () => {
@@ -49,7 +51,7 @@ export default function Tasks() {
   const tasks = useMemo(() => {
     return allTasks.filter((t) => {
       switch (filter) {
-        case 'mine': return t.assigned_to_id === user?.id;
+        case 'mine': return isTaskAssignee(t, user?.id);
         case 'today': return t.due_date === today && !['done', 'completed'].includes(t.status);
         case 'overdue': return isTaskOverdue(t, today);
         case 'completed': return ['done', 'completed'].includes(t.status);
@@ -68,18 +70,20 @@ export default function Tasks() {
   };
 
   const openCreate = async () => {
-    if (isManagement(user?.role)) {
-      const [u, p] = await Promise.all([api.getAssignableUsers(), api.getProjects()]);
-      setUsers(u);
-      setProjects(p);
-    }
+    const [u, p] = await Promise.all([
+      api.getAssignableUsers().catch(() => []),
+      api.getProjects().catch(() => []),
+    ]);
+    setUsers(u);
+    setProjects(p);
     setCreateOpen(true);
   };
 
   const handleCreate = async (e) => {
     e.preventDefault();
     const payload = { ...form };
-    if (form.task_type !== 'personal') payload.assigned_to_id = parseInt(form.assigned_to_id);
+    if (form.task_type !== 'personal') payload.assigned_to_ids = form.assigned_to_ids.map(Number);
+    else delete payload.assigned_to_ids;
     if (form.project_id) payload.project_id = parseInt(form.project_id);
     if (!form.due_date) {
       delete payload.due_date;
@@ -89,7 +93,7 @@ export default function Tasks() {
     }
     await api.createTask(payload);
     setCreateOpen(false);
-    setForm({ title: '', description: '', task_type: 'normal', priority: 'medium', due_date: '', due_time: '', assigned_to_id: '', project_id: '' });
+    setForm({ title: '', description: '', task_type: 'normal', priority: 'medium', due_date: '', due_time: '', assigned_to_ids: [], project_id: '' });
     load();
   };
 
@@ -140,7 +144,7 @@ export default function Tasks() {
                 <h3 className="font-medium text-slate-800 dark:text-slate-100 truncate">{task.title}</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">{task.description}</p>
                 <div className="flex items-center gap-4 mt-2 text-xs text-slate-400">
-                  {task.assigned_to && <span>To: {task.assigned_to.name}</span>}
+                  {formatAssigneeNames(task) && <span>To: {formatAssigneeNames(task)}</span>}
                   {task.due_date && (
                     <span>
                       Due: {task.due_date}
@@ -170,8 +174,8 @@ export default function Tasks() {
             <label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1 block">Type</label>
             <select className="input" value={form.task_type} onChange={(e) => setForm({ ...form, task_type: e.target.value })}>
               <option value="personal">Personal</option>
-              {isManagement(user?.role) && <option value="normal">Normal</option>}
-              {isManagement(user?.role) && <option value="project">Project</option>}
+              <option value="normal">Normal</option>
+              <option value="project">Project</option>
             </select>
           </div>
           <div>
@@ -184,11 +188,14 @@ export default function Tasks() {
           </div>
           {form.task_type !== 'personal' && (
             <div>
-              <label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1 block">Assign To</label>
-              <select className="input" required value={form.assigned_to_id} onChange={(e) => setForm({ ...form, assigned_to_id: e.target.value })}>
-                <option value="">Select</option>
-                {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </select>
+              <label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1 block">Assign To (multiple)</label>
+              <UserMultiSelect
+                users={users}
+                value={form.assigned_to_ids}
+                onChange={(ids) => setForm({ ...form, assigned_to_ids: ids })}
+                required
+                placeholder="Select one or more people"
+              />
             </div>
           )}
           {form.task_type === 'project' && (

@@ -17,6 +17,7 @@ from models import (
     Notification,
     Project,
     Task,
+    TaskAssignee,
     TaskAttachment,
     TaskChecklist,
     TaskComment,
@@ -35,9 +36,13 @@ from utils import (
     is_in_office,
     jwt_required_active,
     log_activity,
+    notify_task_assignees,
     notify_user,
+    resolve_assignee_ids,
     save_profile_photo,
     save_upload,
+    sync_task_assignees,
+    user_is_task_assignee,
 )
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
@@ -270,12 +275,14 @@ def assignable_users(user):
 
 def task_query_for_user(user):
     q = Task.query
+    assignee_task_ids = db.session.query(TaskAssignee.task_id).filter(TaskAssignee.user_id == user.id)
     if user.role == "super_admin":
         return q
     if user.role == "employee":
         return q.filter(
             or_(
                 Task.assigned_to_id == user.id,
+                Task.id.in_(assignee_task_ids),
                 db.and_(Task.task_type == "personal", Task.assigned_to_id == user.id),
                 Task.project_id.isnot(None),
             )
@@ -283,6 +290,7 @@ def task_query_for_user(user):
     return q.filter(
         or_(
             Task.assigned_to_id == user.id,
+            Task.id.in_(assignee_task_ids),
             Task.assigned_by_id == user.id,
             Task.task_type != "personal",
         )
@@ -325,11 +333,10 @@ def create_task(user):
         assigned_to_id = user.id
         status = data.get("status", "todo")
     else:
-        if user.role == "employee" and task_type != "personal":
-            return jsonify({"error": "Employees cannot assign tasks to others"}), 403
-        assigned_to_id = data.get("assigned_to_id")
-        if not assigned_to_id:
-            return jsonify({"error": "assigned_to_id required"}), 400
+        assignee_ids = resolve_assignee_ids(data)
+        if not assignee_ids:
+            return jsonify({"error": "assigned_to_ids required"}), 400
+        assigned_to_id = assignee_ids[0]
         status = "assigned"
 
     task = Task(
@@ -348,12 +355,15 @@ def create_task(user):
     db.session.add(task)
     db.session.flush()
 
+    if task_type != "personal":
+        sync_task_assignees(task, assignee_ids)
+
     for i, item in enumerate(data.get("checklist", [])):
         db.session.add(TaskChecklist(task_id=task.id, text=item["text"], sort_order=i))
 
     log_activity(user, "Task Created", "task", task.id, task.title)
-    if task.assigned_to_id and task.assigned_to_id != user.id:
-        notify_user(task.assigned_to_id, "New Task Assigned", task.title, "task_assigned", "task", task.id)
+    if task_type != "personal":
+        notify_task_assignees(task, user.id, "New Task Assigned", task.title, "task_assigned")
     db.session.commit()
     return jsonify(task.to_dict(include_details=True)), 201
 
@@ -374,6 +384,11 @@ def update_task(user, task_id):
         task.due_time = parse_time(data["due_time"])
     if "status" in data and task.task_type == "personal":
         task.status = data["status"]
+    if task.task_type != "personal" and ("assigned_to_ids" in data or "assigned_to_id" in data):
+        assignee_ids = resolve_assignee_ids(data)
+        if assignee_ids:
+            sync_task_assignees(task, assignee_ids)
+            notify_task_assignees(task, user.id, "Task Updated", f"You were tagged on: {task.title}", "task_assigned")
     log_activity(user, "Task Updated", "task", task.id)
     db.session.commit()
     return jsonify(task.to_dict(include_details=True))
@@ -396,7 +411,7 @@ def update_status(user, task_id):
     if new_status in ("done", "completed") or (
         task.task_type == "project" and new_status == "done"
     ):
-        if task.assigned_to_id != user.id and user.role not in {"super_admin", "admin", "coo", "branch_manager"}:
+        if not user_is_task_assignee(user, task) and user.role not in {"super_admin", "admin", "coo", "branch_manager"}:
             return jsonify({"error": "Only assignee can mark done"}), 403
 
     if task.task_type == "normal" and new_status == "done":
@@ -441,12 +456,12 @@ def verify_task(user, task_id):
         task.status = "completed"
         task.is_readonly = True
         log_activity(user, "Verification Approved", "task", task.id)
-        notify_user(task.assigned_to_id, "Task Verified", task.title, "task_verified", "task", task.id)
+        notify_task_assignees(task, user.id, "Task Verified", task.title, "task_verified")
     else:
         task.status = "rejected"
         task.completed_at = None
         log_activity(user, "Verification Rejected", "task", task.id)
-        notify_user(task.assigned_to_id, "Task Rejected", task.title, "task_rejected", "task", task.id)
+        notify_task_assignees(task, user.id, "Task Rejected", task.title, "task_rejected")
     db.session.commit()
     return jsonify(task.to_dict())
 
@@ -476,9 +491,12 @@ def add_comment(user, task_id):
     db.session.add(comment)
     db.session.flush()
     log_activity(user, "Comment Added", "task", task.id)
-    if task.assigned_to_id and task.assigned_to_id != user.id:
-        notify_user(task.assigned_to_id, "New Message", f"New comment on: {task.title}", "comment_added", "task", task.id)
-    if task.assigned_by_id and task.assigned_by_id != user.id and task.assigned_by_id != task.assigned_to_id:
+    notified = {user.id}
+    for uid in task.assignee_ids():
+        if uid not in notified:
+            notify_user(uid, "New Message", f"New comment on: {task.title}", "comment_added", "task", task.id)
+            notified.add(uid)
+    if task.assigned_by_id and task.assigned_by_id not in notified:
         notify_user(task.assigned_by_id, "New Message", f"New comment on: {task.title}", "comment_added", "task", task.id)
     db.session.commit()
     return jsonify(comment.to_dict()), 201
@@ -609,8 +627,8 @@ def dashboard_stats(user):
     stats = {
         "today": today.isoformat(),
         "total_tasks": len(all_tasks),
-        "assigned_tasks": len([t for t in all_tasks if t.assigned_to_id == user.id and t.status not in ("done", "completed")]),
-        "my_tasks": len([t for t in all_tasks if t.assigned_to_id == user.id]),
+        "assigned_tasks": len([t for t in all_tasks if user_is_task_assignee(user, t) and t.status not in ("done", "completed")]),
+        "my_tasks": len([t for t in all_tasks if user_is_task_assignee(user, t)]),
         "due_today": len([t for t in all_tasks if t.due_date == today and t.status not in ("done", "completed")]),
         "overdue": len([t for t in all_tasks if is_task_overdue(t, today)]),
         "pending_verification": len([t for t in all_tasks if t.status == "pending_verification"]),

@@ -31,9 +31,7 @@ export default function CommandPalette({ onQuickAction }) {
       { id: 'nav-cal', label: 'Open Calendar', icon: Calendar, action: () => navigate('/calendar') },
       { id: 'new-personal', label: 'Create Personal Task', icon: CheckSquare, action: () => onQuickAction('personal') },
     ];
-    if (user?.role !== 'employee') {
-      list.push({ id: 'new-assign', label: 'Assign Task', icon: UserPlus, action: () => onQuickAction('assign') });
-    }
+    list.push({ id: 'new-assign', label: 'Assign Task', icon: UserPlus, action: () => onQuickAction('assign') });
     if (['super_admin', 'admin', 'coo'].includes(user?.role)) {
       list.push({ id: 'new-project', label: 'Create Project', icon: FolderKanban, action: () => onQuickAction('project') });
       list.push({ id: 'nav-employees', label: 'Search Employees', icon: Users, action: () => navigate('/employees') });

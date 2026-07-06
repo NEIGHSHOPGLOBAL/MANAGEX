@@ -66,11 +66,26 @@ def _migrate_schema():
     """Lightweight SQLite migrations for new columns."""
     from sqlalchemy import inspect, text
 
+    from models import Task, TaskAssignee
+
     inspector = inspect(db.engine)
     if "bug_reports" in inspector.get_table_names():
         cols = {c["name"] for c in inspector.get_columns("bug_reports")}
         if "report_type" not in cols:
             db.session.execute(text("ALTER TABLE bug_reports ADD COLUMN report_type VARCHAR(20) DEFAULT 'bug'"))
+            db.session.commit()
+
+    if "task_assignees" in inspector.get_table_names():
+        tasks = Task.query.filter(
+            Task.assigned_to_id.isnot(None),
+            Task.task_type != "personal",
+        ).all()
+        changed = False
+        for task in tasks:
+            if not TaskAssignee.query.filter_by(task_id=task.id, user_id=task.assigned_to_id).first():
+                db.session.add(TaskAssignee(task_id=task.id, user_id=task.assigned_to_id))
+                changed = True
+        if changed:
             db.session.commit()
 
 

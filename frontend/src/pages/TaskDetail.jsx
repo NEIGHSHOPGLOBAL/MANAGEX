@@ -6,6 +6,7 @@ import { api } from '../api/client';
 import { useAuth, isManagement } from '../context/AuthContext';
 import { StatusBadge, PriorityBadge, TypeBadge } from '../components/Badges';
 import { Skeleton } from '../components/Skeleton';
+import { formatAssigneeNames, isTaskAssignee } from '../utils/taskAssignees';
 
 export default function TaskDetail() {
   const { id } = useParams();
@@ -107,7 +108,7 @@ export default function TaskDetail() {
 
   if (!task) return null;
 
-  const canComplete = !task.is_readonly && task.assigned_to_id === user?.id && !['done', 'completed', 'pending_verification'].includes(task.status);
+  const canComplete = !task.is_readonly && isTaskAssignee(task, user?.id) && !['done', 'completed', 'pending_verification'].includes(task.status);
   const canVerify = isManagement(user?.role) && task.status === 'pending_verification';
   const canReopen = user?.role === 'super_admin' && ['done', 'completed'].includes(task.status);
 
@@ -128,7 +129,7 @@ export default function TaskDetail() {
         <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">{task.description}</p>
 
         <div className="grid grid-cols-2 gap-3 mt-4 text-sm">
-          {task.assigned_to && <div><span className="text-slate-400">Assigned To:</span> {task.assigned_to.name}</div>}
+          {formatAssigneeNames(task) && <div><span className="text-slate-400">Assigned To:</span> {formatAssigneeNames(task)}</div>}
           {task.assigned_by && <div><span className="text-slate-400">Assigned By:</span> {task.assigned_by.name}</div>}
           {task.due_date && (
             <div>

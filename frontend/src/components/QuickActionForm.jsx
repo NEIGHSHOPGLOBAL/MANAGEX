@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
+import UserMultiSelect from './UserMultiSelect';
+
 const EMPTY_TASK = {
   title: '',
   description: '',
   priority: 'medium',
   due_date: '',
   due_time: '',
-  assigned_to_id: '',
+  assigned_to_ids: [],
   project_id: '',
   task_type: 'normal',
   personal_notes: '',
@@ -76,7 +78,7 @@ export default function QuickActionForm({ onDone, defaultAction = 'personal' }) 
       } else if (action === 'assign') {
         const taskType = taskForm.task_type;
         const payload = buildTaskPayload(taskType, {
-          assigned_to_id: parseInt(taskForm.assigned_to_id),
+          assigned_to_ids: taskForm.assigned_to_ids.map(Number),
         });
         if (taskType === 'project' && !taskForm.project_id) {
           throw new Error('Please select a project for project tasks');
@@ -106,7 +108,7 @@ export default function QuickActionForm({ onDone, defaultAction = 'personal' }) 
 
   const tabs = [
     { id: 'personal', label: 'Personal' },
-    ...(user?.role !== 'employee' ? [{ id: 'assign', label: 'Assign Task' }] : []),
+    { id: 'assign', label: 'Assign Task' },
     ...(['super_admin', 'admin', 'coo'].includes(user?.role) ? [{ id: 'project', label: 'New Project' }] : []),
   ];
 
@@ -182,13 +184,14 @@ export default function QuickActionForm({ onDone, defaultAction = 'personal' }) 
                     <option value="project">Project Task</option>
                   </select>
                 </Field>
-                <Field label="Assign To" required>
-                  <select className="input" required value={taskForm.assigned_to_id} onChange={(e) => set('assigned_to_id', e.target.value)}>
-                    <option value="">Select employee</option>
-                    {users.map((u) => (
-                      <option key={u.id} value={u.id}>{u.name} ({u.employee_id})</option>
-                    ))}
-                  </select>
+                <Field label="Assign To (multiple)" required>
+                  <UserMultiSelect
+                    users={users}
+                    value={taskForm.assigned_to_ids}
+                    onChange={(ids) => set('assigned_to_ids', ids)}
+                    required
+                    placeholder="Select one or more people"
+                  />
                 </Field>
                 {taskForm.task_type === 'project' && (
                   <Field label="Project" required>
